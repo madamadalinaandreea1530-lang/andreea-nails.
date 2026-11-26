@@ -1,0 +1,31 @@
+ANDREEA NAILS — VERSIUNE CU PANOU DE ADMINISTRARE
+
+CE INCLUDE
+- Formular de programare cu Instagram/Facebook in locul numarului de telefon.
+- Panou privat: confirmare/anulare programari.
+- Adaugare, ascundere/reactivare si stergere servicii.
+- Incarcare si stergere fotografii in galerie.
+- Blocare/deblocare zile libere.
+- Editare date Instagram, Facebook si mesaj de contact.
+- Programari la orele 09:00, 12:00, 15:00 si 18:00.
+
+PASUL 1 — BAZA DE DATE
+1. Deschide Supabase > SQL Editor > New query.
+2. Deschide fisierul migration_andreea_nails.sql, copiaza tot continutul si lipeste-l in editor.
+3. Apasa Run o singura data. Nu sterge si nu modifica tabelele bookings existente.
+
+PASUL 2 — PUBLICAREA SITE-ULUI
+Incarca toate fisierele din arhiva in acelasi proiect/locatie care gazduieste acum site-ul: index.html, admin.html, app.js, admin.js, config.js si style.css. Pastreaza config.js din arhiva, care contine URL-ul proiectului si cheia publishable existenta.
+Nu publica niciodata o cheie secret sau service_role.
+
+PASUL 3 — TEST
+1. Deschide site-ul public si verifica serviciile si formularul.
+2. Trimite o programare de test cu un cont social de test.
+3. Deschide /admin.html, autentifica-te si verifica solicitarea.
+4. Testeaza Confirmă, Anulează, adaugarea unui serviciu, o fotografie, o zi libera si contactele.
+
+IMPORTANT
+- Cererile noi au status pending pana cand le confirmi in panoul admin.
+- Programarile vechi raman in tabel; numarul de telefon vechi este pastrat pentru istoricul lor.
+- Fotografiile acceptate: JPG, PNG, WEBP, maximum 5 MB fiecare.
+- Nu partaja parola administratorului.

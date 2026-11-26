@@ -1,0 +1,47 @@
+ANDREEA NAILS – CONFIRMARI SI MEMENTO-URI PRIN E-MAIL
+====================================================
+
+Ce adauga aceasta versiune
+- Clienta introduce obligatoriu adresa de e-mail.
+- La o solicitare noua, administratorul primeste un e-mail.
+- Din panoul de administrare poti confirma sau anula programarea.
+- Clienta primeste un e-mail cand confirmi sau anulezi.
+- Functia include trimiterea mementoului cu aproximativ 24 de ore inainte.
+
+IMPORTANT: e-mailurile automate NU functioneaza doar prin incarcarea fisierelor site-ului.
+Este necesara configurarea functiei Supabase si a unui furnizor de e-mail.
+
+1. BAZA DE DATE
+Executa in Supabase > SQL Editor noul fisier migration_andreea_nails.sql.
+Nu executa vechiul fisier SQL daca ai inceput deja o alta migrare; foloseste numai versiunea finala furnizata impreuna cu acest pachet.
+
+2. FURNIZORUL DE E-MAIL
+Functia foloseste Resend (https://resend.com). Creeaza un cont si configureaza un domeniu/adresa de expediere conform cerintelor Resend. In modul de test, Resend poate limita destinatarii la adresa contului tau; pentru e-mailuri catre cliente trebuie verificata o adresa/domeniu de expediere acceptat.
+
+3. PUBLICAREA FUNCTIEI
+Din terminalul Supabase CLI, in proiectul conectat:
+  supabase functions deploy booking-email
+
+Seteaza secretele functiei (nu le pune in fisierele publice ale site-ului):
+  supabase secrets set RESEND_API_KEY=re_xxxxxxxxx
+  supabase secrets set ADMIN_EMAIL=adresa_ta_de_email
+  supabase secrets set EMAIL_FROM="Andreea Nails <adresa-verificata@domeniul-tau.ro>"
+  supabase secrets set CRON_SECRET=un_sir_lung_aleatoriu
+
+SUPABASE_URL, SUPABASE_ANON_KEY si SUPABASE_SERVICE_ROLE_KEY sunt furnizate automat de mediul Supabase Edge Functions. Nu copia cheia service_role in site.
+
+4. PUBLICAREA SITE-ULUI
+Incarca fisierele din arhiva peste versiunea existenta, pastrand config.js cu URL-ul si cheia publishable deja configurate. Nu modifica si nu publica chei secrete.
+
+5. MEMENTO CU 24 DE ORE INAINTE
+Dupa publicarea functiei, configureaza un apel programat (Scheduled Trigger / pg_cron) catre:
+  https://wkchngcbghkwyvvwyoam.supabase.co/functions/v1/booking-email
+Metoda POST, header x-cron-secret cu aceeasi valoare setata la CRON_SECRET, Content-Type application/json, corp:
+  {"action":"reminders"}
+Ruleaza apelul la fiecare ora. Functia trimite mementoul doar programarilor confirmate aflate in urmatoarele 24 de ore si marcheaza mementoul ca trimis.
+
+6. TEST
+Fa o programare de test cu o adresa la care ai acces. Verifica e-mailul administratorului, apoi confirma din /admin.html si verifica e-mailul clientei. Testeaza mementoul doar dupa configurarea apelului programat.
+
+NOTA
+Cheia Resend, CRON_SECRET si cheia service_role trebuie pastrate exclusiv in secretele Supabase, niciodata in config.js sau in alte fisiere publice.
