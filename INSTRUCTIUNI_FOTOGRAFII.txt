@@ -1,0 +1,30 @@
+ANDREEA NAILS — REPARARE ÎNCĂRCARE FOTOGRAFII
+
+IMPORTANT
+- Nu șterge proiectul Supabase și nu șterge tabelele existente.
+- Nu modifica fișierul config.js.
+- Nu publica niciodată chei secret sau service_role.
+
+PASUL 1 — PERMISIUNI FOTOGRAFII
+1. Deschide Supabase > SQL Editor > New query.
+2. Deschide fișierul FIX_FOTOGRAFII.sql din această arhivă.
+3. Copiază tot codul în SQL Editor și apasă Run.
+4. Trebuie să apară Success.
+
+PASUL 2 — PUBLICAREA FIȘIERELOR
+Înlocuiește în proiectul GitHub/Cloudflare Pages fișierele existente cu fișierele din arhivă, păstrând aceeași structură:
+- admin.html
+- admin.js
+- index.html
+- app.js
+- config.js
+- style.css
+Păstrează și folderul supabase/functions/booking-email.
+Nu schimba config.js; conține URL-ul și cheia publică pentru proiectul existent.
+
+PASUL 3 — TEST
+1. Deschide https://andreeanailtech.pages.dev/admin.html
+2. Dacă ești deja conectată, reîncarcă pagina. Dacă nu, autentifică-te.
+3. La Fotografii, apasă Alege fotografie și selectează JPG, PNG sau WEBP de maximum 5 MB.
+4. Apasă Încarcă fotografia.
+5. Panoul va afișa un mesaj clar dacă apare o eroare.
