@@ -4,12 +4,47 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f7f1e9">
 <title>Administrare | Andreea Nails</title>
+
 <link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
 <script src="config.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<style>
+.editor-card{grid-column:1/-1}
+.editor-shell{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:16px;margin-top:18px}
+.editor-toolbar,.editor-panel{background:#fffaf4;border:1px solid #e8d8c4;border-radius:14px;padding:14px}
+.editor-toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.editor-toolbar button,.editor-panel button{border:1px solid #d8c3a5;background:#fff;color:#604a32;padding:9px 12px;border-radius:9px;font:inherit;cursor:pointer}
+.editor-toolbar button:hover,.editor-panel button:hover{background:#f3e7d6}
+.editor-stage{background:#e8e1d8;border-radius:14px;padding:12px;overflow:auto;text-align:center}
+.editor-stage .canvas-container{margin:auto;max-width:100%}
+.editor-stage canvas{max-width:100%;height:auto}
+.editor-panel h4{margin:4px 0 12px;color:#80613e}
+.editor-panel label{display:block;font-size:13px;margin:12px 0 5px}
+.editor-panel input,.editor-panel select{width:100%;min-height:38px;border:1px solid #ddcbb5;border-radius:8px;padding:7px;background:white}
+.editor-panel button{width:100%;margin-top:8px}
+.editor-help{font-size:12px;color:#806f5d;line-height:1.5}
+.editor-layers{max-height:210px;overflow:auto;margin-top:8px}
+.editor-layer{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px;border-bottom:1px solid #eadfD2;font-size:12px}
+.editor-layer button{width:auto;margin:0;padding:4px 8px}
+.editor-status{font-size:13px;margin:10px 0;color:#80613e}
+.editor-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.editor-actions button{flex:1;min-width:120px}
+.editor-primary{background:#987448!important;color:white!important}
+.editor-danger{color:#a33!important}
+@media(max-width:850px){
+ .editor-shell{grid-template-columns:1fr}
+ .editor-panel{order:2}
+ .editor-stage{padding:5px}
+ .editor-toolbar button{flex:1}
+}
+</style>
 </head>
+
 <body>
 <header class="topbar">
 <a class="brand" href="index.html">Andreea <span>Nails</span></a>
@@ -44,10 +79,12 @@
 <h3>Programări</h3>
 <div class="table-wrap">
 <table>
-<thead><tr>
+<thead>
+<tr>
 <th>Data</th><th>Ora</th><th>Clientă</th><th>Contact</th>
 <th>E-mail</th><th>Serviciu</th><th>Status</th><th>Acțiuni</th>
-</tr></thead>
+</tr>
+</thead>
 <tbody id="booking-rows"></tbody>
 </table>
 </div>
@@ -155,11 +192,86 @@
 </div>
 </section>
 
-<section class="admin-card">
-<h3>Editor extins al site-ului</h3>
-<p>Pregătit pentru gestionarea secțiunilor, elementelor vizuale și a conținutului personalizat.</p>
-<div id="site-editor">
-<p>Editorul extins va fi activat în următoarea etapă.</p>
+<!-- EDITOR VIZUAL -->
+<section class="admin-card editor-card">
+<h3>Editor vizual · Andreea Nails</h3>
+<p>Construiește și aranjează elementele vizuale ale site-ului. Poți folosi imaginile și fișierele tale.</p>
+
+<div class="editor-toolbar">
+<button type="button" id="editor-add-text">＋ Text</button>
+<button type="button" id="editor-add-rect">＋ Dreptunghi</button>
+<button type="button" id="editor-add-circle">＋ Cerc</button>
+<button type="button" id="editor-upload">＋ Încarcă element</button>
+<input id="editor-file" type="file" accept="image/*,.svg,.gif,video/*" multiple hidden>
+<button type="button" id="editor-duplicate">Duplică</button>
+<button type="button" id="editor-delete" class="editor-danger">Șterge</button>
+<button type="button" id="editor-undo">↶ Anulează</button>
+<button type="button" id="editor-redo">↷ Refă</button>
+</div>
+
+<div class="editor-shell">
+<div>
+<div class="editor-stage">
+<canvas id="design-canvas" width="1200" height="700"></canvas>
+</div>
+<div class="editor-actions">
+<button type="button" id="editor-save" class="editor-primary">Salvează schița</button>
+<button type="button" id="editor-publish">Publică designul</button>
+<button type="button" id="editor-clear">Golește pagina</button>
+</div>
+<p id="editor-status" class="editor-status">Editorul se pregătește...</p>
+<p class="editor-help">Selectează un element pentru a-l muta, redimensiona sau roti. Pe telefon, folosește degetul pentru a-l poziționa.</p>
+</div>
+
+<aside class="editor-panel">
+<h4>Proprietăți element</h4>
+
+<label>Text
+<input id="editor-text" type="text" placeholder="Textul elementului">
+</label>
+
+<label>Culoare
+<input id="editor-color" type="color" value="#987448">
+</label>
+
+<label>Dimensiune text
+<input id="editor-font-size" type="number" min="8" max="200" value="36">
+</label>
+
+<label>Font
+<select id="editor-font-family">
+<option value="DM Sans">DM Sans</option>
+<option value="Montserrat">Montserrat</option>
+<option value="Poppins">Poppins</option>
+<option value="Lora">Lora</option>
+<option value="Georgia">Georgia</option>
+<option value="Arial">Arial</option>
+</select>
+</label>
+
+<label>Transparență
+<input id="editor-opacity" type="range" min="0" max="100" value="100">
+</label>
+
+<label>Rotire
+<input id="editor-angle" type="range" min="0" max="360" value="0">
+</label>
+
+<button type="button" id="editor-bring-front">Adu în față</button>
+<button type="button" id="editor-send-back">Trimite în spate</button>
+<button type="button" id="editor-lock">Blochează / deblochează</button>
+
+<h4 style="margin-top:22px">Fundal pagină</h4>
+<label>Culoare fundal
+<input id="editor-background" type="color" value="#f7f1e9">
+</label>
+<button type="button" id="editor-set-background">Aplică fundalul</button>
+
+<h4 style="margin-top:22px">Straturi</h4>
+<div id="editor-layers" class="editor-layers">
+<p class="editor-help">Straturile vor apărea aici.</p>
+</div>
+</aside>
 </div>
 </section>
 
