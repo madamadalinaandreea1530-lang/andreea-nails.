@@ -1,60 +1,37 @@
-ANDREEA NAILS — ACTUALIZARE CALENDAR, ORE, ȘTERGERE ȘI GOOGLE CALENDAR
+ANDREEA NAILS – ACTUALIZARE CALENDAR + TEME SEZONIERE
 
 IMPORTANT
-Această actualizare păstrează tabelele și programările existente. Nu șterge proiectul Supabase și nu recrea tabelele bookings.
+- Aceasta versiune foloseste ore configurate pentru fiecare DATA, nu pentru ziua saptamanii.
+- Migrarea SQL este aditiva: nu sterge programari, servicii sau fotografii.
+- Nu rula fisiere SQL vechi pentru calendar. Foloseste doar migration_andreea_nails_calendar.sql din aceasta arhiva.
+- Pastreaza config.js din arhiva; contine configuratia publica Supabase a proiectului existent.
 
-CE INCLUDE
-- Calendar public lunar: zilele cu ore disponibile sunt selectabile.
-- Clientele văd numai orele pe care le-ai lăsat disponibile.
-- Panou admin: poți adăuga și elimina ore pentru fiecare zi a săptămânii; programul inițial este 09:00, 12:00, 15:00, 18:00 în fiecare zi, ca pe site-ul actual.
-- Orele rezervate (în așteptare sau confirmate) dispar automat din disponibilitate.
-- Zilele blocate nu pot fi rezervate.
-- Programările anulate au buton Șterge, cu confirmare.
-- Butoane pentru conectarea Google Calendar; evenimentul se adaugă când confirmi programarea și se șterge la anulare dacă sesiunea Google este autorizată.
-- Notificările folosesc Edge Function-ul quik-worker.
-
-PASUL 1 — MIGRAREA SUPABASE (O SINGURĂ DATĂ)
+PASUL 1 – SUPABASE
 1. Deschide: https://supabase.com/dashboard/project/wkchngcbghkwyvvwyoam/sql/new
-2. Deschide fișierul migration_andreea_nails_calendar.sql din arhivă.
-3. Copiază TOT conținutul și lipește-l în SQL Editor.
-4. Apasă Run o singură dată.
-5. Dacă apare o eroare, oprește-te și trimite-mi textul exact. Nu șterge tabele și nu rula alte comenzi de DROP.
+2. Deschide fisierul migration_andreea_nails_calendar.sql din arhiva.
+3. Copiaza tot continutul in SQL Editor si apasa RUN.
+4. Continua numai daca apare Success. Daca apare eroare, opreste-te si trimite mesajul exact; nu rula din nou alte migrari vechi.
 
-PASUL 2 — PUBLICAREA FIȘIERELOR SITE-ULUI
-În repository-ul GitHub andreea-nails, înlocuiește fișierele existente cu cele din arhivă, păstrând structura:
-- index.html
-- admin.html
-- app.js
-- admin.js
-- config.js
-- style.css
-- migration_andreea_nails_calendar.sql (poate rămâne și în repo ca document)
-Nu încărca fișierul quik-worker/index.ts în rădăcina site-ului; acesta este codul funcției Supabase.
-După Commit, verifică în Cloudflare Pages că deployment-ul este Success.
+PASUL 2 – GITHUB
+1. Descarca si dezarhiveaza aceasta arhiva.
+2. Deschide repository-ul: https://github.com/madamadalinaandreea1530-lang/andreea-nails
+3. Incarca fisierele din arhiva in radacina repository-ului si confirma inlocuirea fisierelor cu acelasi nume:
+   index.html, admin.html, app.js, admin.js, style.css, config.js
+4. Pastreaza si fisierele/folderul supabase/functions deja existente. Arhiva include functiile de e-mail din versiunea anterioara.
+5. Nu sterge alte fisiere din repository.
 
-PASUL 3 — ACTUALIZAREA FUNCȚIEI DE E-MAIL
-1. Deschide Supabase > Edge Functions > funcția existentă quik worker (slug-ul ei trebuie să fie quik-worker).
-2. Înlocuiește tot conținutul lui index.ts cu cel din supabase/functions/quik-worker/index.ts din arhivă.
-3. Apasă Deploy.
-4. Păstrează secretele deja setate RESEND_API_KEY și ADMIN_EMAIL. Funcția folosește și variabilele standard Supabase SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY și SUPABASE_ANON_KEY, furnizate de mediul Supabase.
+PASUL 3 – CLOUDFLARE
+1. Deschide https://dash.cloudflare.com/ si proiectul Pages andreeanailtech.
+2. Asteapta deploy-ul automat pornit de GitHub.
+3. Deschide https://andreeanailtech.pages.dev si reincarca pagina.
 
-PASUL 4 — GOOGLE CALENDAR (NECESITĂ CONFIGURARE GOOGLE)
-Doar adresa Gmail nu conectează automat site-ul. Trebuie creat un OAuth Client ID în Google Cloud:
-- activează Google Calendar API;
-- configurează OAuth consent screen;
-- creează OAuth Client ID de tip Web application;
-- la Authorized JavaScript origins adaugă https://andreeanailtech.pages.dev;
-- copiază Client ID-ul (termină în apps.googleusercontent.com).
-Apoi intră în https://andreeanailtech.pages.dev/admin.html, autentifică-te, introdu Client ID în secțiunea Google Calendar, apasă Salvează Client ID, apoi Conectează Google Calendar și autorizează contul Gmail dorit.
-La confirmarea programărilor, evenimentele se adaugă în calendarul Google primar autorizat. Durata implicită este 60 de minute. Dacă tokenul expiră, conectează din nou Google Calendar în panoul admin.
+PASUL 4 – ADMINISTRARE
+1. Deschide https://andreeanailtech.pages.dev/admin.html si autentifica-te.
+2. In „Ore disponibile pe data”, alege data si ora, apoi „Adauga ora”. Repeta pentru fiecare ora.
+3. In „Personalizare design”, alege tema (bej & auriu, vara, toamna, primavara sau Craciun), modifica textele disponibile si salveaza.
+4. Deschide pagina publica si reincarca pentru a vedea schimbarile.
 
-NOTĂ DESPRE RESEND
-Dacă Resend încă folosește expeditorul onboarding@resend.dev, acesta permite trimiterea numai către adresa verificată a contului Resend. Pentru trimitere către andreeanailtech21@gmail.com și către cliente, verifică un domeniu propriu în Resend și setează secretul EMAIL_FROM cu expeditorul acelui domeniu. Nu pune chei secrete în fișierele site-ului sau în GitHub.
-
-TESTARE
-1. După migrare și publicare, deschide site-ul și verifică dacă apar zilele disponibile.
-2. În admin, elimină o oră pentru o zi și verifică dacă dispare pe site.
-3. Creează o programare de test, confirm-o, apoi verifică Google Calendar și e-mailul.
-4. Anulează o programare de test și verifică butonul Șterge.
-
-Nu publica chei service_role sau RESEND_API_KEY în GitHub. Acestea rămân doar în Supabase Secrets.
+NOTE
+- Clientele pot selecta doar datele pentru care ai adaugat ore si care nu sunt blocate/ocupate.
+- „Disponibil” si „Indisponibil” sunt afisate sub numarul zilei, pe un singur rand.
+- Google Calendar si e-mailurile raman dependente de configuratiile lor existente; aceasta actualizare nu garanteaza ca acele integrari functioneaza fara test separat.
