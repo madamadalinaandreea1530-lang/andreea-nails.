@@ -1,101 +1,140 @@
 (() => {
+  'use strict';
   const cfg = window.AN_CONFIG || {};
-  const ready = cfg.SUPABASE_URL && cfg.SUPABASE_PUBLISHABLE_KEY;
-  const db = ready ? window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_PUBLISHABLE_KEY) : null;
+  const db = (window.supabase && cfg.SUPABASE_URL && cfg.SUPABASE_PUBLISHABLE_KEY)
+    ? window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_PUBLISHABLE_KEY) : null;
   const $ = id => document.getElementById(id);
-  const form = $('booking-form'), slots = $('slots'), timeInput = $('booking-time'), msg = $('booking-message');
-  const dateInput = $('booking-date');
-  const dayNames = ['Lu','Ma','Mi','Jo','Vi','Sâ','Du'];
-  let month = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-  let monthAvailability = {};
-  $('year').textContent = new Date().getFullYear();
-  dateInput.min = iso(new Date());
-  const say = (t,c='') => { msg.textContent=t; msg.className='form-message wide '+c; };
   const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   const today = () => iso(new Date());
+  const monthNames = ['ianuarie','februarie','martie','aprilie','mai','iunie','iulie','august','septembrie','octombrie','noiembrie','decembrie'];
+  const dayNames = ['Lu','Ma','Mi','Jo','Vi','Sâ','Du'];
+  let month = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  let selectedDate = '';
 
-  function renderSlots(list=[], blocked=false) {
-    slots.innerHTML=''; timeInput.value='';
-    if (blocked || !list.length) { slots.textContent = blocked ? 'Această zi este indisponibilă.' : 'Nu mai sunt ore disponibile în această zi.'; return; }
-    list.forEach(t => {
-      const value=String(t).slice(0,5), b=document.createElement('button');
-      b.type='button'; b.className='slot'; b.textContent=value;
-      b.onclick=()=>{ slots.querySelectorAll('.slot').forEach(x=>x.classList.remove('selected')); b.classList.add('selected'); timeInput.value=value; };
-      slots.appendChild(b);
+  function message(text, type='') { const el=$('booking-message'); if(!el)return; el.textContent=text; el.className='form-message wide '+type; }
+  function publicUrl(path) { return db.storage.from('andreea-nails').getPublicUrl(path).data.publicUrl; }
+
+  async function loadServices() {
+    const {data,error}=await db.from('site_services').select('*').eq('active',true).order('sort_order',{ascending:true});
+    if(error){$('service-list').innerHTML='<p class="form-message error">Serviciile nu au putut fi încărcate.</p>';return;}
+    const list=$('service-list'), select=$('service-select'); list.innerHTML=''; select.innerHTML='<option value="">Alege serviciul</option>';
+    (data||[]).forEach((s,i)=>{
+      const a=document.createElement('article');a.className='service';
+      const n=document.createElement('span');n.className='service-number';n.textContent=String(i+1).padStart(2,'0');
+      const h=document.createElement('h3');h.textContent=s.name||'';
+      const p=document.createElement('p');p.textContent=s.description||'';
+      const strong=document.createElement('strong');strong.textContent=s.price||'';
+      a.append(n,h,p,strong);list.appendChild(a);
+      const o=document.createElement('option');o.value=s.name;o.textContent=s.name;select.appendChild(o);
     });
+    if(!data?.length) list.innerHTML='<p class="muted">Momentan nu sunt servicii publicate.</p>';
   }
 
-  async function loadSlots(date) {
-    if (!db || !date) return;
-    slots.textContent='Se verifică orele disponibile...'; timeInput.value='';
-    const [{data:available,error}, {data:blocked,error:blockError}] = await Promise.all([
+  async function loadGallery() {
+    const {data,error}=await db.from('site_gallery').select('*').order('sort_order',{ascending:true});
+    const host=$('gallery-list');host.innerHTML='';
+    if(error){host.innerHTML='<p class="form-message error">Galeria nu a putut fi încărcată.</p>';return;}
+    (data||[]).forEach(g=>{
+      const fig=document.createElement('figure');fig.className='gallery-item';
+      const img=document.createElement('img');img.src=publicUrl(g.image_path);img.alt=g.caption||'Lucrare Andreea Nails';img.loading='lazy';
+      fig.appendChild(img);if(g.caption){const cap=document.createElement('figcaption');cap.textContent=g.caption;fig.appendChild(cap);}host.appendChild(fig);
+    });
+    if(!data?.length) host.innerHTML='<p class="muted">Galeria va fi completată în curând.</p>';
+  }
+
+  function applyCustomization(c={}) {
+    document.body.dataset.theme=c.theme||'classic';
+    document.body.classList.toggle('no-decorations',c.decorations===false);
+    const root=document.documentElement;
+    [['primary','primary_color'],['accent','accent_color'],['bg','background_color'],['text','text_color']].forEach(([css,key])=>{if(c[key])root.style.setProperty('--'+css,c[key]);});
+    const ids={hero_title:'hero-title',hero_description:'hero-description',hero_quote:'hero-quote',booking_title:'booking-title',booking_description:'booking-description',services_title:'services-title',services_description:'services-description',gallery_title:'gallery-title',gallery_description:'gallery-description',contact_title:'contact-title',contact_note:'contact-note',hero_eyebrow:'hero-eyebrow',hero_button:'hero-button',hero_note:'hero-note'};
+    Object.entries(ids).forEach(([key,id])=>{if(c[key]!==undefined && $(id)) $(id).textContent=c[key];});
+    if(c.instagram) setSocialLink('instagram-link',c.instagram,'https://instagram.com/');
+    if(c.facebook) setSocialLink('facebook-link',c.facebook,'https://facebook.com/');
+    if(c.font_family){
+      const safe=['DM Sans','Montserrat','Poppins','Lora','Cormorant Garamond','Playfair Display'];
+      const ff=safe.includes(c.font_family)?c.font_family:'DM Sans';
+      root.style.setProperty('--font',`'${ff}',sans-serif`);
+      root.style.setProperty('--font-heading',`'${ff}',serif`);
+      if(!document.querySelector('[data-site-font]')){const l=document.createElement('link');l.dataset.siteFont='1';l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?family='+encodeURIComponent(ff).replace(/%20/g,'+')+':wght@400;500;600;700&display=swap';document.head.appendChild(l);}
+    }
+    if(c.background_image){document.body.classList.add('custom-bg');document.body.style.backgroundImage=`url("${String(c.background_image).replace(/["\\]/g,'')}")`;}
+    if(c.decorative_text) document.body.style.setProperty('--decorative-text',`"${String(c.decorative_text).replace(/["\\]/g,'')}"`);
+  }
+  function setSocialLink(id,value,prefix){const el=$(id);if(!el)return;const v=String(value||'').trim();el.href=/^https?:\/\//i.test(v)?v:prefix+v.replace(/^@/,'');el.textContent=v||prefix.replace('https://','').replace('/','');}
+
+  async function loadCustomizationAndSettings(){
+    const [{data:settings},{data:custom}]=await Promise.all([
+      db.from('site_settings').select('*').eq('id',1).maybeSingle(),
+      db.from('site_customization').select('settings').eq('id',1).maybeSingle()
+    ]);
+    if(settings){setSocialLink('instagram-link',settings.instagram,'https://instagram.com/');setSocialLink('facebook-link',settings.facebook,'https://facebook.com/');if(settings.contact_note && !$('contact-note').dataset.customized)$('contact-note').textContent=settings.contact_note;}
+    applyCustomization(custom?.settings||{});
+  }
+
+  function renderSlots(list){
+    const host=$('slots');host.innerHTML='';$('booking-time').value='';
+    if(!list.length){host.innerHTML='<p class="muted">Nu mai sunt ore disponibile în această zi.</p>';return;}
+    list.forEach(raw=>{const time=String(raw).slice(0,5),b=document.createElement('button');b.type='button';b.className='slot';b.textContent=time;b.onclick=()=>{host.querySelectorAll('.slot').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');$('booking-time').value=time;message('Ai ales ora '+time+'. Poți trimite solicitarea.','success');};host.appendChild(b);});
+  }
+
+  async function loadSlots(date){
+    if(!db)return;
+    $('slots').innerHTML='<p class="muted">Se verifică orele disponibile...</p>';
+    const [{data:slots,error},{data:blocked,error:blockError}]=await Promise.all([
       db.rpc('get_available_slots',{p_date:date}),
       db.from('blocked_dates').select('booking_date').eq('booking_date',date).maybeSingle()
     ]);
-    if (error || blockError) { slots.textContent='Nu am putut verifica disponibilitatea.'; say('Verifică dacă a fost aplicată actualizarea bazei de date. '+(error?.message||blockError?.message||''),'error'); return; }
-    renderSlots((available||[]).map(x=>x.booking_time),!!blocked);
+    if(error||blockError){$('slots').innerHTML='<p class="form-message error">Nu am putut verifica orele. Calendarul trebuie configurat în Supabase.</p>';return;}
+    if(blocked){$('slots').innerHTML='<p class="muted">Această zi este indisponibilă.</p>';return;}
+    renderSlots((slots||[]).map(x=>x.booking_time));
   }
 
-  async function renderCalendar() {
-    const host=$('booking-calendar'); if (!host || !db) return;
-    const start=new Date(month.getFullYear(),month.getMonth(),1), end=new Date(month.getFullYear(),month.getMonth()+1,0);
-    $('calendar-month').textContent=month.toLocaleDateString('ro-RO',{month:'long',year:'numeric'});
-    const {data,error}=await db.rpc('get_month_availability',{p_start:iso(start),p_end:iso(end)});
-    if(error){host.innerHTML='<p class="form-message error">Calendarul nu este configurat încă. Te rugăm să revii mai târziu.</p>';return;}
-    monthAvailability={}; (data||[]).forEach(x=>monthAvailability[String(x.booking_date).slice(0,10)]=Number(x.available_count));
-    host.innerHTML='';
-    dayNames.forEach(n=>{const el=document.createElement('span');el.className='calendar-weekday';el.textContent=n;host.appendChild(el);});
-    const offset=(start.getDay()+6)%7;
-    for(let i=0;i<offset;i++){const blank=document.createElement('span');blank.className='calendar-day empty';host.appendChild(blank);}
-    for(let n=1;n<=end.getDate();n++){
-      const d=new Date(month.getFullYear(),month.getMonth(),n), key=iso(d), count=monthAvailability[key]||0;
-      const b=document.createElement('button');b.type='button';b.className='calendar-day';const num=document.createElement('span');num.className='day-number';num.textContent=n;b.appendChild(num);const status=document.createElement('small');status.textContent=(key<today()||count===0)?'Indisponibil':'Disponibil';b.appendChild(status);
-      if(key<today()||count===0){b.disabled=true;b.classList.add('unavailable');}
-      else {b.classList.add('available');b.setAttribute('aria-label',d.toLocaleDateString('ro-RO')+' disponibil');b.onclick=()=>{host.querySelectorAll('.calendar-day').forEach(x=>x.classList.remove('chosen'));b.classList.add('chosen');dateInput.value=key;loadSlots(key);say('Ai ales '+d.toLocaleDateString('ro-RO')+'. Alege o oră disponibilă.');};}
+  async function renderCalendar(){
+    const host=$('booking-calendar');if(!host||!db)return;
+    $('calendar-month').textContent=`${monthNames[month.getMonth()]} ${month.getFullYear()}`;
+    host.innerHTML='<p class="muted">Se încarcă disponibilitatea...</p>';
+    const start=iso(new Date(month.getFullYear(),month.getMonth(),1));const end=iso(new Date(month.getFullYear(),month.getMonth()+1,0));
+    const {data,error}=await db.rpc('get_month_availability',{p_start:start,p_end:end});
+    if(error){host.innerHTML='<p class="form-message error">Calendarul nu este configurat încă.</p>';return;}
+    const map={};(data||[]).forEach(x=>map[String(x.booking_date).slice(0,10)]=Number(x.available_count));
+    dayNames.forEach(n=>{const e=document.createElement('span');e.className='calendar-weekday';e.textContent=n;host.appendChild(e);});
+    const first=new Date(month.getFullYear(),month.getMonth(),1),offset=(first.getDay()+6)%7;
+    for(let i=0;i<offset;i++){const e=document.createElement('span');e.className='calendar-day empty';host.appendChild(e);}
+    const days=new Date(month.getFullYear(),month.getMonth()+1,0).getDate();
+    for(let n=1;n<=days;n++){
+      const d=new Date(month.getFullYear(),month.getMonth(),n),key=iso(d),available=key>=today()&&map[key]>0;
+      const b=document.createElement('button');b.type='button';b.className='calendar-day '+(available?'available':'unavailable');
+      const num=document.createElement('span');num.className='day-number';num.textContent=n;b.appendChild(num);
+      const st=document.createElement('small');st.textContent=available?'Disponibil':'Indisponibil';b.appendChild(st);
+      if(!available)b.disabled=true;
+      else b.onclick=()=>{selectedDate=key;$('booking-date').value=key;host.querySelectorAll('.calendar-day').forEach(x=>x.classList.remove('chosen'));b.classList.add('chosen');$('slots').innerHTML='<p class="muted">Se verifică orele disponibile...</p>';loadSlots(key);message(`Ai ales ${d.toLocaleDateString('ro-RO')}. Alege o oră disponibilă.`);};
       host.appendChild(b);
     }
   }
 
-  $('calendar-prev').addEventListener('click',()=>{month=new Date(month.getFullYear(),month.getMonth()-1,1);renderCalendar();});
-  $('calendar-next').addEventListener('click',()=>{month=new Date(month.getFullYear(),month.getMonth()+1,1);renderCalendar();});
-
-  async function loadContent(){
-    if(!db)return;
-    const [{data:services},{data:settings},{data:gallery}] = await Promise.all([
-      db.from('site_services').select('*').eq('active',true).order('sort_order'),
-      db.from('site_settings').select('*').eq('id',1).maybeSingle(),
-      db.from('site_gallery').select('*').order('sort_order')
-    ]);
-    $('service-list').innerHTML=''; $('service-select').innerHTML='<option value="">Alege serviciul</option>';
-    (services||[]).forEach((s,i)=>{
-      const a=document.createElement('article');a.className='service';
-      [String(i+1).padStart(2,'0'),s.name,s.description,s.price].forEach((v,j)=>{const e=document.createElement(j===0?'span':j===1?'h3':j===2?'p':'strong');e.textContent=v||'';if(j===0)e.className='service-number';a.appendChild(e);});
-      $('service-list').appendChild(a);const o=document.createElement('option');o.value=s.name;o.textContent=s.name;$('service-select').appendChild(o);
-    });
-    if(settings){$('contact-note').textContent=settings.contact_note||'Pentru întrebări despre programări, mă poți contacta direct.';[['instagram-link',settings.instagram],['facebook-link',settings.facebook]].forEach(([id,url])=>{if(url){$(id).href=/^https?:\/\//i.test(url)?url:(id==='instagram-link'?'https://instagram.com/':'https://facebook.com/')+url.replace(/^@/,'');}});}
-    const {data:custom}=await db.from('site_customization').select('settings').eq('id',1).maybeSingle(); if(custom?.settings){const c=custom.settings;const root=document.documentElement;document.body.dataset.theme=c.theme||'classic';if(c.hero_title)$('hero-title').textContent=c.hero_title;if(c.hero_description)$('hero-description').textContent=c.hero_description;if(c.hero_quote)$('hero-quote').textContent=c.hero_quote;if(c.booking_title)$('booking-title').textContent=c.booking_title;if(c.booking_description)$('booking-description').textContent=c.booking_description;if(c.decorations===false)document.body.classList.add('no-decorations');if(c.primary_color)root.style.setProperty('--custom-primary',c.primary_color);if(c.accent_color)root.style.setProperty('--custom-accent',c.accent_color);if(c.background_color)root.style.setProperty('--custom-background',c.background_color);if(c.text_color)root.style.setProperty('--custom-text',c.text_color);if(c.font_family){const safe=['DM Sans','Montserrat','Poppins','Lora','Cormorant Garamond','Playfair Display'];const ff=safe.includes(c.font_family)?c.font_family:'DM Sans';root.style.setProperty('--custom-font-body',`'${ff}',sans-serif`);root.style.setProperty('--custom-font-heading',`'${ff}',serif`);if(!document.querySelector('[data-custom-font]')){const link=document.createElement('link');link.rel='stylesheet';link.dataset.customFont='1';link.href='https://fonts.googleapis.com/css2?family='+encodeURIComponent(ff).replace(/%20/g,'+')+':wght@400;500;600;700&display=swap';document.head.appendChild(link);}}if(c.background_image){document.body.style.backgroundImage=`url("${String(c.background_image).replace(/["\\]/g,'')}")`;document.body.style.backgroundSize=c.background_mode==='contain'?'contain':c.background_mode==='repeat'?'auto':'cover';document.body.style.backgroundRepeat=c.background_mode==='repeat'?'repeat':'no-repeat';document.body.style.backgroundAttachment='fixed';}if(c.decorative_text){document.body.style.setProperty('--custom-decorations',`"${String(c.decorative_text).replace(/["\\]/g,'')}"`);document.body.classList.add('custom-decorations');}}
-    $('gallery-list').innerHTML='';
-    (gallery||[]).forEach(g=>{const a=document.createElement('article');a.className='service';const im=document.createElement('img');im.src=db.storage.from('andreea-nails').getPublicUrl(g.image_path).data.publicUrl;im.alt=g.caption||'Lucrare Andreea Nails';im.style='width:100%;height:260px;object-fit:cover';a.appendChild(im);if(g.caption){const p=document.createElement('p');p.textContent=g.caption;a.appendChild(p);} $('gallery-list').appendChild(a);});
+  async function submitBooking(e){
+    e.preventDefault();
+    const form=e.currentTarget;if(!db){message('Site-ul nu este conectat la Supabase.','error');return;}
+    if(!form.reportValidity())return;
+    if(!$('booking-date').value||!$('booking-time').value){message('Alege mai întâi o zi și o oră.','error');return;}
+    const fd=new FormData(form), payload={client_name:String(fd.get('client_name')).trim(),phone:null,social_platform:String(fd.get('social_platform')),social_username:String(fd.get('social_username')).trim(),email:String(fd.get('email')).trim().toLowerCase(),service:String(fd.get('service')),booking_date:String(fd.get('booking_date')),booking_time:String(fd.get('booking_time')),notes:String(fd.get('notes')||'').trim()||null,status:'pending'};
+    const btn=$('submit-booking');btn.disabled=true;btn.textContent='Se trimite...';
+    const {error}=await db.from('bookings').insert(payload);
+    btn.disabled=false;btn.innerHTML='Trimite solicitarea <span>↗</span>';
+    if(error){message(/SLOT_NOT_AVAILABLE|duplicate|unique/i.test(error.message)?'Această oră nu mai este disponibilă. Alege alta.':'Nu am putut trimite programarea: '+error.message,'error');await renderCalendar();if(selectedDate)await loadSlots(selectedDate);return;}
+    try{const r=await db.functions.invoke(cfg.EDGE_FUNCTION_NAME||'quik-worker',{body:{action:'new',booking:payload}});if(r.error)console.warn('Email notification failed',r.error);}catch(err){console.warn('Email notification failed',err);}
+    form.reset();selectedDate='';$('booking-date').value='';$('booking-time').value='';$('slots').innerHTML='<p class="muted">Alege o zi din calendar.</p>';
+    message('Solicitarea a fost trimisă cu succes. Vei fi contactată pentru confirmare.','success');await renderCalendar();
   }
 
-  form.addEventListener('submit',async e=>{
-    e.preventDefault();
-    if(!db){say('Site-ul nu este conectat la Supabase.','error');return;}
-    if(!dateInput.value||!timeInput.value){say('Alege o zi și o oră din calendar.','error');return;}
-    const f=new FormData(form), payload={client_name:f.get('client_name').trim(),phone:null,social_platform:f.get('social_platform'),social_username:f.get('social_username').trim(),email:f.get('email').trim().toLowerCase(),service:f.get('service'),booking_date:dateInput.value,booking_time:timeInput.value,notes:f.get('notes').trim()||null,status:'pending'};
-    const submit=$('submit-booking');submit.disabled=true;submit.textContent='Se trimite...';
-    const {error}=await db.from('bookings').insert(payload);
-    submit.disabled=false;submit.innerHTML='Trimite solicitarea <span>↗</span>';
-    if(error){say(error.message.includes('SLOT_NOT_AVAILABLE')?'Această oră nu mai este disponibilă. Alege alta.':'Nu am putut trimite programarea: '+error.message,'error');await loadSlots(payload.booking_date);await renderCalendar();return;}
-    const notice=await db.functions.invoke(cfg.EDGE_FUNCTION_NAME||'quik-worker',{body:{action:'new',booking:payload}});
-    if(notice.error){
-      console.error('Programarea a fost salvată, dar e-mailul administratorului nu a putut fi trimis:',notice.error);
-      say('Programarea a fost salvată, dar notificarea pe e-mail nu a putut fi trimisă. Andreea poate verifica solicitarea în panoul de administrare.','error');
-    } else {
-      say('Solicitarea a fost trimisă, iar Andreea a primit notificarea pe e-mail. Îți va confirma programarea.','success');
-    }
-    form.reset();dateInput.value='';timeInput.value='';slots.innerHTML='<p class="muted">Alege o zi din calendar.</p>';await renderCalendar();
-  });
-
-  if(db){loadContent();renderCalendar();}else say('Configurarea Supabase nu este completă.','error');
+  async function init(){
+    $('year').textContent=new Date().getFullYear();
+    if(!db){message('Configurația Supabase lipsește.','error');return;}
+    $('calendar-prev').onclick=()=>{const min=new Date(new Date().getFullYear(),new Date().getMonth(),1);const next=new Date(month.getFullYear(),month.getMonth()-1,1);if(next>=min){month=next;renderCalendar();}};
+    $('calendar-next').onclick=()=>{month=new Date(month.getFullYear(),month.getMonth()+1,1);renderCalendar();};
+    $('booking-form').addEventListener('submit',submitBooking);
+    await Promise.all([loadServices(),loadGallery(),loadCustomizationAndSettings(),renderCalendar()]);
+  }
+  init().catch(err=>{console.error(err);const host=$('booking-calendar');if(host)host.innerHTML='<p class="form-message error">A apărut o eroare la încărcarea site-ului. Verifică configurația Supabase.</p>';});
 })();
