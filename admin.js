@@ -109,7 +109,24 @@
   $('photo-form').onsubmit=async e=>{e.preventDefault();const f=new FormData(e.currentTarget),file=f.get('photo');if(!file||!file.size)return;const path=Date.now()+'-'+file.name.replace(/[^a-zA-Z0-9._-]/g,'-');const up=await db.storage.from('andreea-nails').upload(path,file,{upsert:false});if(up.error){say(up.error.message,'error');return;}const {data}=await db.from('site_gallery').select('sort_order').order('sort_order',{ascending:false}).limit(1).maybeSingle();const ins=await db.from('site_gallery').insert({image_path:path,caption:f.get('caption').trim(),sort_order:(data?.sort_order||0)+1});if(ins.error){say(ins.error.message,'error');return;}e.currentTarget.reset();loadPhotos();say('Fotografia a fost încărcată.','success');};
   $('blocked-form').onsubmit=async e=>{e.preventDefault();const f=new FormData(e.currentTarget),{error}=await db.from('blocked_dates').upsert({booking_date:f.get('date'),reason:f.get('reason').trim()});if(error)say(error.message,'error');else{e.currentTarget.reset();loadBlocked();say('Ziua a fost blocată.','success');}};
   $('contact-form').onsubmit=async e=>{e.preventDefault();const f=new FormData(e.currentTarget),{error}=await db.from('site_settings').upsert({id:1,instagram:f.get('instagram').trim(),facebook:f.get('facebook').trim(),contact_note:f.get('contact_note').trim()});if(error)say(error.message,'error');else say('Datele de contact au fost salvate.','success');};
-  $('hours-form').onsubmit=async e=>{e.preventDefault();const f=new FormData(e.currentTarget),date=f.get('date'),slot=f.get('time');const {error}=await db.from('site_date_availability').upsert({booking_date:date,slot_time:slot},{onConflict:'booking_date,slot_time'});if(error)say(error.message,'error');else{e.currentTarget.elements.time.value='';loadHours();say('Ora a fost adăugată pentru '+new Date(date+'T12:00:00').toLocaleDateString('ro-RO')+'.','success');}};
+  $('hours-form').addEventListener('submit',async e=>{
+    e.preventDefault();
+    const form=e.currentTarget;
+    const button=form.querySelector('button[type=submit]');
+    const values=new FormData(form);
+    const date=values.get('date');
+    const slot=values.get('time');
+    if(!date||!slot){say('Alege atât data, cât și ora.','error');return;}
+    if(button){button.disabled=true;button.textContent='Se salvează…';}
+    try{
+      const {error}=await db.from('site_date_availability').upsert({booking_date:date,slot_time:slot},{onConflict:'booking_date,slot_time'});
+      if(error){say('Nu am putut salva ora: '+error.message,'error');return;}
+      form.elements.time.value='';
+      await loadHours();
+      say('Ora '+slot+' a fost adăugată pentru '+new Date(date+'T12:00:00').toLocaleDateString('ro-RO')+'.','success');
+    }catch(err){say('Eroare la salvarea orei: '+(err?.message||String(err)),'error');}
+    finally{if(button){button.disabled=false;button.textContent='Adaugă ora';}}
+  });
   $('custom-form').onsubmit=async e=>{e.preventDefault();const f=new FormData(e.currentTarget),settings={theme:f.get('theme'),hero_title:f.get('hero_title').trim(),hero_description:f.get('hero_description').trim(),hero_quote:f.get('hero_quote').trim(),booking_title:f.get('booking_title').trim(),booking_description:f.get('booking_description').trim(),decorations:f.get('decorations')==='on'};const {error}=await db.from('site_customization').upsert({id:1,settings,updated_at:new Date().toISOString()});if(error)say('Nu am putut salva personalizarea: '+error.message,'error');else say('Personalizarea a fost salvată. Reîncarcă site-ul pentru a vedea schimbările.','success');};
   $('google-client-form').onsubmit=e=>{e.preventDefault();const id=$('google-client-id').value.trim();localStorage.setItem('andreea_google_client_id',id);say('ID-ul Google a fost salvat pe acest dispozitiv. Apasă „Conectează” pentru autorizare.','success');};
   $('google-connect').onclick=async()=>{try{await getGoogleToken('consent select_account');say('Google Calendar a fost autorizat în această sesiune.','success');}catch(e){say('Nu am putut conecta Google Calendar: '+e.message,'error');}};
