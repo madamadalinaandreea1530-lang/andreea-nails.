@@ -1,0 +1,14 @@
+ANDREEA NAILS – PACHET ACTUALIZAT
+
+Pachetul contine calendar cu ore configurate separat pentru fiecare data, teme sezoniere si notificare e-mail la o programare noua.
+
+ORDINEA CORECTA:
+1. Citeste INSTRUCTIUNI_ACTUALIZARE.txt.
+2. Ruleaza o singura data migration_andreea_nails_calendar.sql in Supabase. Nu rula migrarile vechi.
+3. Incarca fisierele site-ului in GitHub si asteapta publicarea Cloudflare Pages.
+4. Publica functia Supabase quik-worker si verifica secretele Resend/ADMIN_EMAIL.
+5. Testeaza o programare si verifica jurnalul functiei si inboxul.
+
+ATENTIE: Nu este confirmata functionarea notificarilor pana cand functia quik-worker este publicata, expeditorul Resend este acceptat si testul trimite efectiv e-mailul. Daca Resend foloseste onboarding@resend.dev, poate restrictiona destinatarul la adresa contului Resend.
+
+Pachetul nu contine parole, cheia service_role sau cheia API Resend. Nu le introduce in fisierele publice.
