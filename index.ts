@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-cron-secret', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Content-Type': 'application/json' };
 const json = (body: unknown, status=200) => new Response(JSON.stringify(body), { status, headers: cors });
+const esc = (v: unknown) => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   if (req.method !== 'POST') return json({error:'Method not allowed'},405);
@@ -8,6 +9,7 @@ Deno.serve(async (req) => {
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const resendKey = Deno.env.get('RESEND_API_KEY');
   const adminEmail = Deno.env.get('ADMIN_EMAIL');
+  if (!serviceKey) return json({error:'Lipseste secretul Supabase service role din mediul functiei'},500);
   if (!resendKey || !adminEmail) return json({error:'Lipsesc RESEND_API_KEY sau ADMIN_EMAIL'},500);
   const admin = createClient(url, serviceKey);
   const send = async (to:string, subject:string, html:string) => {
@@ -19,13 +21,14 @@ Deno.serve(async (req) => {
     if (body.action === 'new') {
       const b = body.booking;
       if (!b?.client_name || !b?.email || !b?.booking_date || !b?.booking_time) return json({error:'Date incomplete'},400);
-      await send(adminEmail, 'Solicitare nouă de programare – Andreea Nails', `<h2>Solicitare nouă</h2><p><b>${esc(b.client_name)}</b></p><p>${esc(b.service)} · ${esc(b.booking_date)} · ${esc(String(b.booking_time))}</p><p>E-mail clientă: ${esc(b.email)}</p><p>Contact: ${esc(b.social_platform||'')} ${esc(b.social_username||'')}</p><p>Intră în panoul Andreea Nails pentru a confirma sau respinge solicitarea.</p>`);
+      await send(adminEmail, 'Solicitare nouă de programare – Andreea Nails', `<h2>Solicitare nouă</h2><p><b>${esc(b.client_name)}</b></p><p>${esc(b.service)} · ${esc(b.booking_date)} · ${esc(String(b.booking_time).slice(0,5))}</p><p>E-mail clientă: ${esc(b.email)}</p><p>Contact: ${esc(b.social_platform||'')} ${esc(b.social_username||'')}</p><p>Intră în panoul Andreea Nails pentru a confirma sau anula solicitarea.</p>`);
       return json({ok:true});
     }
     if (body.action === 'status') {
       const auth = req.headers.get('Authorization') || '';
       const token = auth.replace(/^Bearer\s+/i,'');
-      const userClient = createClient(url, Deno.env.get('SUPABASE_ANON_KEY')!, {global:{headers:{Authorization:`Bearer ${token}`}}});
+      const anonKey = Deno.env.get('SUPABASE_ANON_KEY') || Deno.env.get('SUPABASE_PUBLISHABLE_KEY') || '';
+      const userClient = createClient(url, anonKey, {global:{headers:{Authorization:`Bearer ${token}`}}});
       const {data:{user}} = await userClient.auth.getUser();
       if (!user || user.app_metadata?.role !== 'admin') return json({error:'Unauthorized'},401);
       const {data:b,error} = await admin.from('bookings').select('*').eq('id',body.booking_id).single();
@@ -54,4 +57,3 @@ Deno.serve(async (req) => {
     return json({error:'Acțiune necunoscută'},400);
   } catch (e) { return json({error:String(e)},500); }
 });
-function esc(v: unknown) { return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!)); }
