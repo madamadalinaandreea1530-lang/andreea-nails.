@@ -9,7 +9,7 @@
   let month = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
   let monthAvailability = {};
   $('year').textContent = new Date().getFullYear();
-  dateInput.min = new Date().toLocaleDateString('en-CA');
+  dateInput.min = iso(new Date());
   const say = (t,c='') => { msg.textContent=t; msg.className='form-message wide '+c; };
   const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   const today = () => iso(new Date());
@@ -73,7 +73,7 @@
       $('service-list').appendChild(a);const o=document.createElement('option');o.value=s.name;o.textContent=s.name;$('service-select').appendChild(o);
     });
     if(settings){$('contact-note').textContent=settings.contact_note||'Pentru întrebări despre programări, mă poți contacta direct.';[['instagram-link',settings.instagram],['facebook-link',settings.facebook]].forEach(([id,url])=>{if(url){$(id).href=/^https?:\/\//i.test(url)?url:(id==='instagram-link'?'https://instagram.com/':'https://facebook.com/')+url.replace(/^@/,'');}});}
-    const {data:custom}=await db.from('site_customization').select('settings').eq('id',1).maybeSingle(); if(custom?.settings){const c=custom.settings;document.body.dataset.theme=c.theme||'classic';if(c.hero_title)$('hero-title').textContent=c.hero_title;if(c.hero_description)$('hero-description').textContent=c.hero_description;if(c.hero_quote)$('hero-quote').textContent=c.hero_quote;if(c.booking_title)$('booking-title').textContent=c.booking_title;if(c.booking_description)$('booking-description').textContent=c.booking_description;if(c.decorations===false)document.body.classList.add('no-decorations');}
+    const {data:custom}=await db.from('site_customization').select('settings').eq('id',1).maybeSingle(); if(custom?.settings){const c=custom.settings;const root=document.documentElement;document.body.dataset.theme=c.theme||'classic';if(c.hero_title)$('hero-title').textContent=c.hero_title;if(c.hero_description)$('hero-description').textContent=c.hero_description;if(c.hero_quote)$('hero-quote').textContent=c.hero_quote;if(c.booking_title)$('booking-title').textContent=c.booking_title;if(c.booking_description)$('booking-description').textContent=c.booking_description;if(c.decorations===false)document.body.classList.add('no-decorations');if(c.primary_color)root.style.setProperty('--custom-primary',c.primary_color);if(c.accent_color)root.style.setProperty('--custom-accent',c.accent_color);if(c.background_color)root.style.setProperty('--custom-background',c.background_color);if(c.text_color)root.style.setProperty('--custom-text',c.text_color);if(c.font_family){const safe=['DM Sans','Montserrat','Poppins','Lora','Cormorant Garamond','Playfair Display'];const ff=safe.includes(c.font_family)?c.font_family:'DM Sans';root.style.setProperty('--custom-font-body',`'${ff}',sans-serif`);root.style.setProperty('--custom-font-heading',`'${ff}',serif`);if(!document.querySelector('[data-custom-font]')){const link=document.createElement('link');link.rel='stylesheet';link.dataset.customFont='1';link.href='https://fonts.googleapis.com/css2?family='+encodeURIComponent(ff).replace(/%20/g,'+')+':wght@400;500;600;700&display=swap';document.head.appendChild(link);}}if(c.background_image){document.body.style.backgroundImage=`url("${String(c.background_image).replace(/["\\]/g,'')}")`;document.body.style.backgroundSize=c.background_mode==='contain'?'contain':c.background_mode==='repeat'?'auto':'cover';document.body.style.backgroundRepeat=c.background_mode==='repeat'?'repeat':'no-repeat';document.body.style.backgroundAttachment='fixed';}if(c.decorative_text){document.body.style.setProperty('--custom-decorations',`"${String(c.decorative_text).replace(/["\\]/g,'')}"`);document.body.classList.add('custom-decorations');}}
     $('gallery-list').innerHTML='';
     (gallery||[]).forEach(g=>{const a=document.createElement('article');a.className='service';const im=document.createElement('img');im.src=db.storage.from('andreea-nails').getPublicUrl(g.image_path).data.publicUrl;im.alt=g.caption||'Lucrare Andreea Nails';im.style='width:100%;height:260px;object-fit:cover';a.appendChild(im);if(g.caption){const p=document.createElement('p');p.textContent=g.caption;a.appendChild(p);} $('gallery-list').appendChild(a);});
   }
@@ -87,9 +87,13 @@
     const {error}=await db.from('bookings').insert(payload);
     submit.disabled=false;submit.innerHTML='Trimite solicitarea <span>↗</span>';
     if(error){say(error.message.includes('SLOT_NOT_AVAILABLE')?'Această oră nu mai este disponibilă. Alege alta.':'Nu am putut trimite programarea: '+error.message,'error');await loadSlots(payload.booking_date);await renderCalendar();return;}
-    say('Solicitarea a fost trimisă! Andreea îți va confirma programarea prin e-mail.','success');
     const notice=await db.functions.invoke(cfg.EDGE_FUNCTION_NAME||'quik-worker',{body:{action:'new',booking:payload}});
-    if(notice.error)console.warn('E-mailul administratorului nu a putut fi trimis:',notice.error);
+    if(notice.error){
+      console.error('Programarea a fost salvată, dar e-mailul administratorului nu a putut fi trimis:',notice.error);
+      say('Programarea a fost salvată, dar notificarea pe e-mail nu a putut fi trimisă. Andreea poate verifica solicitarea în panoul de administrare.','error');
+    } else {
+      say('Solicitarea a fost trimisă, iar Andreea a primit notificarea pe e-mail. Îți va confirma programarea.','success');
+    }
     form.reset();dateInput.value='';timeInput.value='';slots.innerHTML='<p class="muted">Alege o zi din calendar.</p>';await renderCalendar();
   });
 

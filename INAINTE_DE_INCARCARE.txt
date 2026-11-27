@@ -1,0 +1,14 @@
+Andreea Nails - fisiere pentru GitHub
+
+Incarca cele 5 fisiere din acest ZIP in radacina repository-ului (acelasi nivel unde sunt acum index.html si admin.html):
+- index.html
+- admin.html
+- app.js
+- admin.js
+- style.css
+
+IMPORTANT:
+- NU inlocui config.js. Pastreaza config.js existent din repository.
+- NU incarca fisierele SQL sau functia quik-worker din acest pachet in aceasta etapa.
+- Daca GitHub intreaba daca vrei sa inlocuiesti fisierele existente, confirma pentru cele 5 fisiere de mai sus.
+- Apoi apasa Commit changes pe ramura main.

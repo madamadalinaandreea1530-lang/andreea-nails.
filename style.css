@@ -30,3 +30,36 @@ body[data-theme="spring"] .hero:after{content:'✿  ❀  ✿';display:block;posi
 body.no-decorations .hero:after{display:none!important}
 .season-quote{font:italic 20px 'Playfair Display',serif;color:#987044;margin-top:22px}
 @media(max-width:600px){.booking-calendar{gap:3px}.calendar-day{min-height:58px;border-radius:8px;padding:3px 0}.calendar-day .day-number{font-size:16px}.calendar-day small{font-size:7px;letter-spacing:-.45px}.calendar-toolbar strong{font-size:20px}.booking-form{padding:18px}}
+
+/* Decoratiuni discrete pentru temele sezoniere */
+body[data-theme="summer"] .hero:after{content:'☼  ✧  ☼';display:block;position:absolute;right:8%;top:105px;color:#d4a84e;letter-spacing:12px;pointer-events:none}
+body[data-theme="autumn"] .hero:after{content:'🍂  ✧  🍁';display:block;position:absolute;right:8%;top:105px;color:#a96e32;letter-spacing:8px;pointer-events:none}
+body[data-theme="christmas"] .hero:after{content:'✦  ❄  ✧  ♡  ❄  ✦';display:block;position:absolute;right:8%;top:105px;color:#bd965e;letter-spacing:9px;pointer-events:none}
+body.no-decorations .hero:after{display:none!important}
+
+/* Personalizare liberă din panoul de administrare */
+:root{--custom-primary:#987448;--custom-accent:#c69b5a;--custom-background:#f7f1e9;--custom-text:#332b27}
+body{color:var(--custom-text)}
+.button{background:var(--custom-primary)}
+.button:hover{filter:brightness(.9)}
+.hero,.booking-section{background-color:var(--custom-background)}
+.calendar-day.available{border-color:var(--custom-accent)}
+.custom-decorations .hero:after{content:var(--custom-decorations);display:block;position:absolute;right:8%;top:105px;color:var(--custom-accent);letter-spacing:8px;pointer-events:none}
+.custom-preview{margin:14px 0;padding:24px;border:1px solid var(--preview-accent,#c69b5a);background:var(--preview-bg,#f7f1e9);color:var(--preview-text,#332b27);display:flex;flex-direction:column;gap:8px;min-height:110px}
+.custom-preview span{font-size:9px;letter-spacing:2px}.custom-preview strong{font:500 24px 'Playfair Display'}.custom-preview small{font:italic 14px 'Playfair Display';color:var(--preview-primary,#987448)}
+#custom-form input[type=color]{height:44px;padding:4px;max-width:100%}
+body{background-color:var(--custom-background)}
+.topbar,.service,.booking-form,.admin-card{border-color:color-mix(in srgb,var(--custom-accent) 35%,#ffffff)}
+.section h2,.contact h2,.hero h1{color:var(--custom-text)}
+.hero h1 em,.eyebrow,.service strong,.service-number,.calendar-toolbar strong{color:var(--custom-primary)}
+.booking-section{background:color-mix(in srgb,var(--custom-background) 86%,#ffffff)}
+.booking-form,.service{background-color:color-mix(in srgb,var(--custom-background) 35%,#ffffff)}
+.calendar-day.available{border-color:var(--custom-accent);color:var(--custom-primary)}
+.calendar-day.chosen,.calendar-day.available:hover,.slot.selected{background:var(--custom-primary);border-color:var(--custom-primary);color:#fff}
+
+/* Font selectat din Personalizare design */
+body{font-family:var(--custom-font-body,'DM Sans',sans-serif);color:var(--custom-text,#332b27);background-color:var(--custom-background,#fbf8f3)}
+.hero h1,.section h2,.contact h2,.admin-wrap h1,.brand,.service h3,.calendar-toolbar strong{font-family:var(--custom-font-heading,'Playfair Display',serif)}
+.button{background:var(--custom-primary,#987448)}
+.button:hover{filter:brightness(.9)}
+.season-quote,.brand span,.eyebrow{color:var(--custom-accent,#a47c4c)}
