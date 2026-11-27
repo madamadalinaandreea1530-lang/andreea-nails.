@@ -1,8 +1,185 @@
-<!doctype html><html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Administrare | Andreea Nails</title><link rel="stylesheet" href="style.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script><script src="https://accounts.google.com/gsi/client" async defer></script></head><body><header class="topbar"><a class="brand" href="index.html">Andreea <span>Nails</span></a><nav><a href="index.html">Înapoi la site</a></nav></header><main class="admin-wrap"><div class="section-heading"><p class="eyebrow">ZONĂ PRIVATĂ</p><h1>Panou de administrare</h1><p>Gestionează programările, disponibilitatea, serviciile, fotografiile și designul.</p></div><section id="login-panel" class="login-panel"><form id="login-form"><label>Email<input name="email" type="email" required placeholder="Email administrator"></label><label>Parolă<input name="password" type="password" required placeholder="Parola contului"></label><button class="button" type="submit">Autentificare</button><p id="login-message" class="form-message"></p></form></section><section id="dashboard" hidden><div class="admin-toolbar"><h2>Andreea Nails</h2><button id="logout" class="button button-light">Deconectare</button></div><p id="admin-message" class="form-message"></p><h2>Programări</h2><div class="table-wrap"><table><thead><tr><th>Data</th><th>Ora</th><th>Clientă</th><th>Contact</th><th>E-mail</th><th>Serviciu</th><th>Status</th><th>Acțiuni</th></tr></thead><tbody id="booking-rows"></tbody></table></div><div class="admin-grid">
-<section class="admin-card"><h3>Servicii</h3><form id="service-form"><label>Denumire<input name="name" required></label><label>Descriere<textarea name="description" rows="2"></textarea></label><label>Preț<input name="price" required placeholder="de la 120 lei"></label><button class="button" type="submit">Adaugă serviciu</button></form><div id="service-items"></div></section>
-<section class="admin-card"><h3>Fotografii</h3><form id="photo-form"><label>Fotografie<input name="photo" type="file" accept="image/jpeg,image/png,image/webp" required></label><label>Descriere<input name="caption" maxlength="120"></label><button class="button" type="submit">Încarcă</button></form><div id="photo-items"></div></section>
-<section class="admin-card"><h3>Ore pe fiecare dată</h3><form id="hours-form"><label>Data<input name="date" type="date" required></label><label>Ora<input name="time" type="time" required></label><button class="button" type="submit">Adaugă ora</button></form><div id="hours-list"></div></section>
-<section class="admin-card"><h3>Zile indisponibile</h3><form id="blocked-form"><label>Data<input name="date" type="date" required></label><label>Motiv<input name="reason" maxlength="120"></label><button class="button" type="submit">Blochează ziua</button></form><div id="blocked-items"></div></section>
-<section class="admin-card"><h3>Personalizare design</h3><form id="custom-form"><label>Tema<select name="theme"><option value="classic">Bej & auriu</option><option value="summer">Vară</option><option value="autumn">Toamnă</option><option value="spring">Primăvară</option><option value="christmas">Crăciun</option></select></label><label>Titlu principal<input name="hero_title"></label><label>Descriere principală<textarea name="hero_description" rows="3"></textarea></label><label>Citat<input name="hero_quote"></label><label>Titlu programare<input name="booking_title"></label><label>Descriere programare<textarea name="booking_description" rows="2"></textarea></label><label>Titlu servicii<input name="services_title"></label><label>Descriere servicii<input name="services_description"></label><label>Titlu galerie<input name="gallery_title"></label><label>Descriere galerie<input name="gallery_description"></label><label>Titlu contact<input name="contact_title"></label><label>Notă contact<input name="contact_note"></label><label>Buton principal<input name="hero_button"></label><label>Notă sub buton<input name="hero_note"></label><label>Instagram<input name="instagram"></label><label>Facebook<input name="facebook"></label><label>Culoare principală<input name="primary_color" type="color" value="#987448"></label><label>Culoare accent<input name="accent_color" type="color" value="#c69b5a"></label><label>Fundal<input name="background_color" type="color" value="#f7f1e9"></label><label>Culoare text<input name="text_color" type="color" value="#332b27"></label><label>Font<select name="font_family"><option>DM Sans</option><option>Montserrat</option><option>Poppins</option><option>Lora</option><option>Cormorant Garamond</option><option>Playfair Display</option></select></label><label>Text decorativ<input name="decorative_text" placeholder="✦ ❀ ✦"></label><label>Decorațiuni<input name="decorations" type="checkbox" checked></label><label>Imagine fundal<input name="background_image" type="file" accept="image/jpeg,image/png,image/webp"></label><button class="button" type="submit">Salvează designul</button></form><div id="custom-preview" class="preview"><strong>Previzualizare</strong><small>Schimbările se aplică pe site după salvare.</small></div></section>
-<section class="admin-card"><h3>Google Calendar</h3><p class="muted">Conectează calendarul Google. La confirmarea unei programări se creează evenimentul; la anulare, dacă există, evenimentul este șters.</p><form id="google-client-form"><label>Google OAuth Client ID<input id="google-client-id" required placeholder="...apps.googleusercontent.com"></label><button class="button" type="submit">Salvează ID</button></form><button id="google-connect" class="button button-light" type="button">Conectează Google Calendar</button><p id="google-status" class="form-message"></p></section>
-</div></section></main><script src="admin.js"></script></body></html>
+
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Administrare | Andreea Nails</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+<header class="topbar">
+<a class="brand" href="index.html">Andreea <span>Nails</span></a>
+<nav><a href="index.html">Înapoi la site</a></nav>
+</header>
+
+<main class="admin-wrap">
+<div class="section-heading">
+<p class="eyebrow">ZONĂ PRIVATĂ</p>
+<h1>Panou de administrare</h1>
+<p>Controlează toate elementele site-ului Andreea Nails.</p>
+</div>
+
+<section id="login-panel" class="login-panel">
+<form id="login-form">
+<label>Email<input name="email" type="email" required placeholder="Email administrator"></label>
+<label>Parolă<input name="password" type="password" required placeholder="Parola contului"></label>
+<button class="button" type="submit">Autentificare</button>
+<p id="login-message" class="form-message"></p>
+</form>
+</section>
+
+<section id="dashboard" hidden>
+<div class="admin-toolbar">
+<h2>Andreea Nails · Administrare</h2>
+<button id="logout" class="button button-light">Deconectare</button>
+</div>
+
+<p id="admin-message" class="form-message"></p>
+
+<section class="admin-card">
+<h3>Programări</h3>
+<div class="table-wrap">
+<table>
+<thead><tr>
+<th>Data</th><th>Ora</th><th>Clientă</th><th>Contact</th>
+<th>E-mail</th><th>Serviciu</th><th>Status</th><th>Acțiuni</th>
+</tr></thead>
+<tbody id="booking-rows"></tbody>
+</table>
+</div>
+</section>
+
+<div class="admin-grid">
+
+<section class="admin-card">
+<h3>Servicii</h3>
+<form id="service-form">
+<label>Denumire<input name="name" required></label>
+<label>Descriere<textarea name="description" rows="2"></textarea></label>
+<label>Preț<input name="price" required placeholder="de la 120 lei"></label>
+<button class="button" type="submit">Adaugă serviciu</button>
+</form>
+<div id="service-items"></div>
+</section>
+
+<section class="admin-card">
+<h3>Fotografii</h3>
+<form id="photo-form">
+<label>Fotografie<input name="photo" type="file" accept="image/jpeg,image/png,image/webp" required></label>
+<label>Descriere<input name="caption" maxlength="120"></label>
+<button class="button" type="submit">Încarcă fotografia</button>
+</form>
+<div id="photo-items"></div>
+</section>
+
+<section class="admin-card">
+<h3>Calendar · Ore disponibile</h3>
+<form id="hours-form">
+<label>Data<input name="date" type="date" required></label>
+<label>Ora<input name="time" type="time" required></label>
+<button class="button" type="submit">Adaugă ora</button>
+</form>
+<div id="hours-list"></div>
+</section>
+
+<section class="admin-card">
+<h3>Zile indisponibile</h3>
+<form id="blocked-form">
+<label>Data<input name="date" type="date" required></label>
+<label>Motiv<input name="reason" maxlength="120"></label>
+<button class="button" type="submit">Blochează ziua</button>
+</form>
+<div id="blocked-items"></div>
+</section>
+
+<section class="admin-card">
+<h3>Personalizare design</h3>
+<form id="custom-form">
+
+<label>Tema
+<select name="theme">
+<option value="classic">Bej și auriu</option>
+<option value="summer">Vară</option>
+<option value="autumn">Toamnă</option>
+<option value="spring">Primăvară</option>
+<option value="christmas">Crăciun</option>
+</select>
+</label>
+
+<label>Titlu principal<input name="hero_title"></label>
+<label>Descriere principală<textarea name="hero_description" rows="3"></textarea></label>
+<label>Citat<input name="hero_quote"></label>
+<label>Titlu programare<input name="booking_title"></label>
+<label>Descriere programare<textarea name="booking_description"></textarea></label>
+<label>Titlu servicii<input name="services_title"></label>
+<label>Descriere servicii<textarea name="services_description"></textarea></label>
+<label>Titlu galerie<input name="gallery_title"></label>
+<label>Descriere galerie<textarea name="gallery_description"></textarea></label>
+<label>Titlu contact<input name="contact_title"></label>
+<label>Notă contact<input name="contact_note"></label>
+<label>Text buton principal<input name="hero_button"></label>
+<label>Notă sub buton<input name="hero_note"></label>
+<label>Instagram<input name="instagram"></label>
+<label>Facebook<input name="facebook"></label>
+
+<label>Culoare principală<input name="primary_color" type="color" value="#987448"></label>
+<label>Culoare accent<input name="accent_color" type="color" value="#c69b5a"></label>
+<label>Culoare fundal<input name="background_color" type="color" value="#f7f1e9"></label>
+<label>Culoare text<input name="text_color" type="color" value="#332b27"></label>
+
+<label>Font
+<select name="font_family">
+<option>DM Sans</option>
+<option>Montserrat</option>
+<option>Poppins</option>
+<option>Lora</option>
+<option>Cormorant Garamond</option>
+<option>Playfair Display</option>
+</select>
+</label>
+
+<label>Elemente decorative<input name="decorative_text" placeholder="✦ ❀ ✦"></label>
+<label><input name="decorations" type="checkbox" checked> Activează decorațiunile</label>
+<label>Imagine de fundal<input name="background_image" type="file" accept="image/jpeg,image/png,image/webp"></label>
+
+<button class="button" type="submit">Salvează designul</button>
+</form>
+
+<div id="custom-preview" class="preview">
+<strong>Previzualizare</strong>
+<small>Schimbările vor apărea pe site după salvare.</small>
+</div>
+</section>
+
+<section class="admin-card">
+<h3>Editor extins al site-ului</h3>
+<p>Pregătit pentru gestionarea secțiunilor, elementelor vizuale și a conținutului personalizat.</p>
+<div id="site-editor">
+<p>Editorul extins va fi activat în următoarea etapă.</p>
+</div>
+</section>
+
+<section class="admin-card">
+<h3>Google Calendar</h3>
+<p class="muted">Conectează calendarul Google pentru gestionarea evenimentelor.</p>
+<form id="google-client-form">
+<label>Google OAuth Client ID
+<input id="google-client-id" required placeholder="...apps.googleusercontent.com">
+</label>
+<button class="button" type="submit">Salvează ID</button>
+</form>
+<button id="google-connect" class="button button-light" type="button">Conectează Google Calendar</button>
+<p id="google-status" class="form-message"></p>
+</section>
+
+</div>
+</section>
+</main>
+
+<script src="admin.js"></script>
+</body>
+</html>
